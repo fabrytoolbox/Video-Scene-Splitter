@@ -1,5 +1,6 @@
 # Video-Scene-Splitter.ps1 - v2.1
 # Estrae scene da video con GUI Matrix, auto-FFmpeg, log e pulsante annulla
+# Fix (2025-01-28): gestione corretta dei path con spazi e caratteri speciali
 
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
@@ -262,11 +263,14 @@ function Extract-Clip ($VideoPath, $OutputPath, $Start, $Duration) {
     $ffArgs += $mp4Args
     $ffArgs += $OutputPath
 
-    # Usa Start-Process asincrono per non bloccare la GUI
-    $script:currentProcess = Start-Process -FilePath $ffmpegPath -ArgumentList $ffArgs -PassThru -NoNewWindow -Wait
-    return $script:currentProcess.ExitCode -eq 0
+    # Usa & per gestire correttamente i path con spazi
+    try {
+        $null = & $script:ffmpegPath @ffArgs 2>&1
+        return ($LASTEXITCODE -eq 0)
+    } catch {
+        return $false
+    }
 }
-
 # ========================= EVENTS =========================
 
 $btnVideo.Add_Click({
